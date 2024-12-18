@@ -11,8 +11,8 @@ app.use(express.json());
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.swu9d.mongodb.net/?retryWrites=true&w=majority`;
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.y24v7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -31,8 +31,31 @@ async function run() {
     const productCollection = client.db('emaJohnDB').collection('products');
 
     app.get('/products', async(req, res) => {
-        const result = await productCollection.find().toArray();
+      console.log('Product query dobule: ',req.query);
+      const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
+      const skip = page * size;
+
+        const result = await productCollection.find().skip(skip).limit(size).toArray();
         res.send(result);
+    })
+
+    app.post('/productsByIds',async(req,res)=>{
+      const ids = req.body;
+      const productObjectIds = ids.map(id=> new ObjectId(id));
+      console.log(productObjectIds)
+      const query = {_id: {
+        $in: productObjectIds
+      }}
+      const result = await productCollection.find(query).toArray();
+ 
+      res.send(result);
+    })
+
+    app.get('/productsCount',async(req,res)=>{
+      const result = await productCollection.estimatedDocumentCount();
+      // console.log(result)
+      res.send({count: result});
     })
 
     // Send a ping to confirm a successful connection
